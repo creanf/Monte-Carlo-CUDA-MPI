@@ -1,0 +1,1 @@
+create_sims: nvcc -O3 -gencode arch=compute_70,code=sm_70 create_sims.cu -o "create_sims_exe"
