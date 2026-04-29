@@ -1,0 +1,2 @@
+experiment,ranks,log2_sims,total_sims,log2_days,total_days,avg_compute_s,avg_io_s,speedup,efficiency_pct,weak_efficiency_pct
+strong,1,18,262144,8,256,.203738,.002764,1.0000,100.00,

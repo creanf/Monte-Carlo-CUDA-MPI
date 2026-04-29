@@ -1,0 +1,15 @@
+============================================
+ Monte Carlo Scaling Benchmark
+ Date: Wed Apr 29 16:01:51 EDT 2026
+ Host: dcsfen01
+ Binary: ./test
+============================================
+
+
+[0;36m========== STRONG SCALING ==========[0m
+
+[1;33m--- Days = 256 (log2=8) ---[0m
+
+[0;32m  Problem size: 2^18 = 262144 sims[0m
+  Ranks=1, sims=2^18, days=256 ... compute=.203738s  io=.002764s  speedup=1.0000x  eff=100.00%
+  Ranks=2, sims=2^18, days=256 ... 
