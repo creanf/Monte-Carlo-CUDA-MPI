@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda_runtime.h>
+#include <math.h>
 #include <mpi.h>
 #include "timing.h"
 
@@ -33,6 +34,20 @@ void cuda_launcher(struct sim** seq,
                    float mu,
                    float time_delta,
                    int rank);
+
+float phi(float x) {
+    return 0.5f * (1.0f + erff(x / sqrtf(2.0f)));
+}
+
+float expected_max(float S0, float mu, float sigma, float T) {
+    float mean = S0 * expf(mu * T);
+    return mean * 2.0f * phi(-sigma * sqrtf(T));  // normcdff = Phi()
+}
+
+float expected_min(float S0, float mu, float sigma, float T) {
+    float mean = S0 * expf(mu * T);
+    return mean * 2.0f * phi(sigma* sqrtf(T));
+ }
 
 int main(int argc, char **argv)
 {
@@ -97,12 +112,23 @@ int main(int argc, char **argv)
 
     compute_finish = getticks();
     double compute_time = (double)(compute_finish - compute_start)/ (double) 512000000.0 ;
+	
+    float trading_years = num_days/251.0;
+    float exp_curr = 100 * expf(mu * trading_years); //  
+    float exp_min = expected_min(100, mu, sigma, trading_years); 
+    float exp_max = expected_max(100, mu, sigma, trading_years);
 
-    printf("Rank %d -> curr: %f max: %f min: %f\n",
+    float dif_curr = fabsf((exp_curr/sim_sum->curr_val*1.0f - 1) * 100);
+    float dif_min = fabsf((exp_min/sim_sum->min_val*1.0f - 1) * 100);
+    float dif_max = fabsf((exp_max/sim_sum->max_val*1.0f - 1) * 100);
+
+    printf("Rank %d -> curr: %.4f max: %.4f min: %.4f\n",
         rank,
         sim_sum->curr_val,
         sim_sum->max_val,
         sim_sum->min_val);
+    printf("Theoretical Expected Values: curr: %.4f max: %.4f min: %.4f: \n ",exp_curr, exp_min, exp_max );
+   printf("Percent Differences: curr: %.4f max: %.4f min: %.4f: \n ", dif_curr, dif_min, dif_max);
 
 
     
@@ -137,7 +163,8 @@ int main(int argc, char **argv)
     
     if( rank == 0 )
     {
-        printf("TOTAL TIME: %f\n", compute_time);
+        printf("num days: %d", num_days);
+	printf("TOTAL TIME: %f\n", compute_time);
         printf("PRINT TO FILE TIME: %f\n", io_time);
     }
 
