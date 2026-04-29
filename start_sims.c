@@ -75,10 +75,11 @@ int main(int argc, char **argv)
     MPI_Bcast(&seed, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
     MPI_Bcast(&num_sims, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&num_days, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
+    
+    printf("num ranks=%d",size);
 
     int local_n = num_sims / size;
-
+ 
     printf("Rank %d handling %d simulations\n", rank, local_n);
 
     if (local_n == 0) {
@@ -88,7 +89,8 @@ int main(int argc, char **argv)
 
     float mu = 0.08f;
     float sigma = 0.15f;
-    float time_delta = 1.0f / (float)num_days;
+   // float time_delta = 1.0f / (float)num_days;
+float time_delta = 1.0f / 251;
 
     int num_threads = 256;
     int num_blocks = 256;
@@ -112,23 +114,32 @@ int main(int argc, char **argv)
 
     compute_finish = getticks();
     double compute_time = (double)(compute_finish - compute_start)/ (double) 512000000.0 ;
-	
-    float trading_years = num_days/251.0;
-    float exp_curr = 100 * expf(mu * trading_years); //  
-    float exp_min = expected_min(100, mu, sigma, trading_years); 
-    float exp_max = expected_max(100, mu, sigma, trading_years);
 
-    float dif_curr = fabsf((exp_curr/sim_sum->curr_val*1.0f - 1) * 100);
-    float dif_min = fabsf((exp_min/sim_sum->min_val*1.0f - 1) * 100);
-    float dif_max = fabsf((exp_max/sim_sum->max_val*1.0f - 1) * 100);
+    struct sim exp;
+    struct sim dif;
+
+    float trading_years = num_days/251.0;
+    exp.curr_val = 100 * expf(mu * trading_years); //  
+    exp.min_val = expected_min(100, mu, sigma, trading_years); 
+    exp.max_val = expected_max(100, mu, sigma, trading_years);
+
+    dif.curr_val = fabsf((exp.curr_val/(sim_sum->curr_val*1.0f) - 1) * 100);
+    dif.min_val = fabsf((exp.min_val/(sim_sum->min_val*1.0f) - 1) * 100);
+    dif.max_val = fabsf((exp.max_val/(sim_sum->max_val*1.0f) - 1) * 100);
 
     printf("Rank %d -> curr: %.4f max: %.4f min: %.4f\n",
         rank,
         sim_sum->curr_val,
         sim_sum->max_val,
         sim_sum->min_val);
-    printf("Theoretical Expected Values: curr: %.4f max: %.4f min: %.4f: \n ",exp_curr, exp_min, exp_max );
-   printf("Percent Differences: curr: %.4f max: %.4f min: %.4f: \n ", dif_curr, dif_min, dif_max);
+    printf("Theoretical Expected Values: curr: %.4f max: %.4f min: %.4f: \n ",
+		    exp.curr_val,
+		    exp.min_val,
+		    exp.max_val );
+   printf("Percent Differences: curr: %.4f max: %.4f min: %.4f: \n ",
+		   dif.curr_val,
+		   dif.min_val,
+		   dif.max_val);
 
 
     
@@ -163,7 +174,7 @@ int main(int argc, char **argv)
     
     if( rank == 0 )
     {
-        printf("num days: %d", num_days);
+        printf("num days: %d\n", num_days);
 	printf("TOTAL TIME: %f\n", compute_time);
         printf("PRINT TO FILE TIME: %f\n", io_time);
     }
@@ -171,7 +182,6 @@ int main(int argc, char **argv)
     //Free using Cudaruntime so can access values from cuda in main
     cudaFree(seq);
     cudaFree(sim_sum);
-
 
     MPI_Finalize();
     return 0;
